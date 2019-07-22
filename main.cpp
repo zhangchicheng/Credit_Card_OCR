@@ -1,7 +1,6 @@
 #include <iostream>
-#include <stdexcept>
 #include <algorithm>
-
+#include <stdexcept>
 #include "opencv2/opencv.hpp"
 
 using namespace std;
@@ -15,13 +14,13 @@ Mat findConvexPoly(Mat &src)
 
     vector<vector<Point>> contours;
     findContours(edges, contours, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-	sort(contours.begin(), contours.end(), [&contours](vector<Point> lhs, vector<Point> rhs) { return lhs.size() > rhs.size(); });
+    sort(contours.begin(), contours.end(), [&contours](vector<Point> lhs, vector<Point> rhs) { return lhs.size() > rhs.size(); });
 
     vector<Point> hull;
     convexHull(Mat(contours[0]), hull, false);
 
     vector<vector<Point>> cnt(1);
-	approxPolyDP(hull, cnt[0], 20, true);
+    approxPolyDP(hull, cnt[0], 20, true);
 
     Mat poly = Mat::zeros(edges.size(), CV_8UC1);
     drawContours(poly, cnt, 0, Scalar(255));
@@ -36,7 +35,7 @@ vector<Point2f> detectCornors(Mat &src)
 
     Mat labels, centers;
     vector<Point2f> data;
-    for (int i=0; i<lines.size(); i++)
+    for (size_t i=0; i<lines.size(); i++)
     {
         float rho = lines[i][0], theta = lines[i][1];
         float x = rho*cos(theta), y = rho*sin(theta);
@@ -53,40 +52,40 @@ vector<Point2f> detectCornors(Mat &src)
         float rho = sqrt(x*x+y*y);
         float theta = atan2(y, x);
 
-		xyPoints.push_back(Point2f(x,y));
+        xyPoints.push_back(Point2f(x,y));
         fourPoints.push_back(Point2f(rho,theta));
     }
 
-	sort(xyPoints.begin(), xyPoints.end(), [](Point2f &lhs, Point2f &rhs) { return abs(lhs.y/lhs.x) < abs(rhs.y/rhs.x); } );
+    sort(xyPoints.begin(), xyPoints.end(), [](Point2f &lhs, Point2f &rhs) { return abs(lhs.y/lhs.x) < abs(rhs.y/rhs.x); } );
 
-	vector<Point2f> ans;
-	for (int i=0; i<2; i++)
-	{
-		float x0 = xyPoints[i].x;
-		float y0 = xyPoints[i].y;
+    vector<Point2f> ans;
+    for (size_t i=0; i<2; i++)
+    {
+        float x0 = xyPoints[i].x;
+        float y0 = xyPoints[i].y;
 
-		for (int j=2; j<4; j++)
-		{
-			float x1 = xyPoints[j].x;
-			float y1 = xyPoints[j].y;
-			float x = (y0*(x1*x1+y1*y1)-y1*(x0*x0+y0*y0))/(y0*x1-x0*y1);
-			float y = (x0*(x1*x1+y1*y1)-x1*(x0*x0+y0*y0))/(y1*x0-x1*y0);
-			ans.push_back(Point2f(x,y));
-		}
-	}
+        for (size_t j=2; j<4; j++)
+        {
+            float x1 = xyPoints[j].x;
+            float y1 = xyPoints[j].y;
+            float x = (y0*(x1*x1+y1*y1)-y1*(x0*x0+y0*y0))/(y0*x1-x0*y1);
+            float y = (x0*(x1*x1+y1*y1)-x1*(x0*x0+y0*y0))/(y1*x0-x1*y0);
+            ans.push_back(Point2f(x,y));
+        }
+    }
 
-	// order of points (top-left, bottom-left, top-right, bottom-right)
-	sort(ans.begin(), ans.end(), [](Point2f lhs, Point2f rhs) { return lhs.x<rhs.x; } );
-	sort(ans.begin(), ans.begin()+2, [](Point2f lhs, Point2f rhs) { return lhs.y<rhs.y; });
-	sort(ans.begin()+2, ans.end(), [](Point2f lhs, Point2f rhs) { return lhs.y<rhs.y; });
+    // order of points (top-left, bottom-left, top-right, bottom-right)
+    sort(ans.begin(), ans.end(), [](Point2f lhs, Point2f rhs) { return lhs.x<rhs.x; } );
+    sort(ans.begin(), ans.begin()+2, [](Point2f lhs, Point2f rhs) { return lhs.y<rhs.y; });
+    sort(ans.begin()+2, ans.end(), [](Point2f lhs, Point2f rhs) { return lhs.y<rhs.y; });
 
-	return ans;
+    return ans;
 }
 
 Mat warpCard(Mat src)
 {
     auto convexPoly = findConvexPoly(src);
-	auto cornors = detectCornors(convexPoly);
+    auto cornors = detectCornors(convexPoly);
     Mat warpedCard(340, 540, CV_8UC1);
     Mat homography = findHomography(cornors, std::vector<Point>{Point(0,0), Point(0, warpedCard.rows), Point(warpedCard.cols, 0), Point(warpedCard.cols, warpedCard.rows)});
     warpPerspective(src, warpedCard, homography, Size(warpedCard.cols, warpedCard.rows));
@@ -95,7 +94,7 @@ Mat warpCard(Mat src)
 
 vector<Mat> getRefOCR()
 {
-    Mat ref = imread("ocr-a.png");
+    Mat ref = imread("font.png");
     cvtColor(ref, ref, CV_BGR2GRAY);
     
     vector<vector<Point>> contours;
@@ -104,10 +103,10 @@ vector<Mat> getRefOCR()
     sort(contours.begin(), contours.end(), [&contours](vector<Point> lhs, vector<Point> rhs) { return lhs[0].x < rhs[0].x; } );
 
     vector<Mat> roi(contours.size());
-    for (int i=0; i<contours.size(); i++)
+    for (size_t i=0; i<contours.size(); i++)
     {
         Rect boundRect = boundingRect(contours[i]);
-        resize(ref(boundRect), roi[i], Size(57,88));
+        resize(ref(boundRect), roi[i], Size(54,84));
     }
     return roi;
 }
@@ -145,7 +144,6 @@ vector<Rect> findBoundingRect(Mat src)
     }
 
     sort(rects.begin(), rects.end(), [](Rect lhs, Rect rhs) { return lhs.x < rhs.x; });
-
     return rects;
 }
 
@@ -156,7 +154,7 @@ vector<int> detectDigits(Mat gray, vector<Mat> digitROI)
     
     vector<Mat> roi(4);
     vector<int> ans;
-    for (int i=0; i<rects.size(); i++)
+    for (size_t i=0; i<rects.size(); i++)
     {
         roi[i] = gray(Rect(rects[i].x-5, rects[i].y-5, rects[i].width+10, rects[i].height+10));
         blur(roi[i], roi[i], Size(3, 3));
@@ -166,15 +164,15 @@ vector<int> detectDigits(Mat gray, vector<Mat> digitROI)
 
         sort(digitCnt.begin(), digitCnt.end(), [](vector<Point> lhs, vector<Point> rhs) { return lhs[0].x < rhs[0].x; });
 
-        for (int j=0; j<digitCnt.size(); j++)
+        for (size_t j=0; j<digitCnt.size(); j++)
         {
             Rect r = boundingRect(digitCnt[j]);
-            
             Mat d = roi[i](r);
-            resize(d,d,Size(57,88));
+            resize(d,d,Size(54,84));
+
             int score=INT_MIN;
             int idx=-1;
-            for (int k=0; k<digitROI.size(); k++)
+            for (size_t k=0; k<digitROI.size(); k++)
             {
                 Mat res;
                 matchTemplate(d, digitROI[k], res, CV_TM_CCOEFF);
@@ -184,10 +182,10 @@ vector<int> detectDigits(Mat gray, vector<Mat> digitROI)
                 {
                     score = maxVal;
                     idx=k;
-                }   
+                }
             }
             ans.push_back(idx);
-        }    
+        }
     }
     return ans;
 }
@@ -202,13 +200,17 @@ int main(int argc, char *argv[])
     resize(src, src, Size(540, 540.0*src.rows/src.cols));
     cvtColor(src, src, CV_BGR2GRAY);
 
-	auto warpedCard = warpCard(src);
+    auto warpedCard = warpCard(src);
     auto ref = getRefOCR();
     auto ans = detectDigits(warpedCard, ref);
 
-    for (auto i:ans)
-        cout<<i;
+    cout<<"Account Number: ";
+    for (int i=0; i<16; i++)
+    {
+        cout<<ans[i];
+        if ((i+1)%4==0 && i!=15)
+            cout<<"-";
+    }
     cout<<endl;
-
     return 0;
 }
